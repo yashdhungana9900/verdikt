@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+/* Design tokens. Change the look of the whole app from here. */
+@theme static {
+  --color-bg: #0a0a0b;
+  --color-panel: #111114;
+  --color-panel2: #18181c;
+  --color-line: rgb(255 255 255 / 0.08);
+  --color-line2: rgb(255 255 255 / 0.15);
+  --color-fg: #ededef;
+  --color-fg2: #9c9ca6;
+  --color-fg3: #6a6a74;
+  --color-accent: #7c5cff;
+  --color-accent2: #9b7bff;
+
+  /* Verdict colors: the signature of the app */
+  --color-ok: #3dd68c;
+  --color-bad: #ff5c6c;
+  --color-warn: #f5b544;
+  --color-err: #ff8a3d;
+  --color-ce: #b58cff;
+  --color-pend: #8a8a96;
+
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, Menlo, monospace;
+}
+
+[data-theme="light"] {
+  --color-bg: #fafafb;
+  --color-panel: #ffffff;
+  --color-panel2: #f2f2f5;
+  --color-line: rgb(0 0 0 / 0.09);
+  --color-line2: rgb(0 0 0 / 0.18);
+  --color-fg: #14141a;
+  --color-fg2: #5b5b66;
+  --color-fg3: #8b8b95;
+  --color-accent: #6a48f0;
+  --color-accent2: #7f5fff;
+  --color-ok: #12995a;
+  --color-bad: #d93a4a;
+  --color-warn: #b87800;
+  --color-err: #d9600f;
+  --color-ce: #7b4fd6;
+}
+
+@layer base {
+  html { color-scheme: dark; }
+  [data-theme="light"] { color-scheme: light; }
+  body { @apply bg-bg text-fg font-sans antialiased; letter-spacing: -0.006em; }
+  :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 8px; }
+  button { cursor: pointer; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ---- polish ---- */
+::selection { background: color-mix(in srgb, var(--color-accent) 35%, transparent); }
+* { scrollbar-width: thin; scrollbar-color: var(--color-line2) transparent; }
+.bg-grid {
+  background-image: linear-gradient(var(--color-line) 1px, transparent 1px), linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0, black 20%, transparent 75%);
+}
+.text-gradient {
+  background: linear-gradient(180deg, var(--color-fg) 30%, color-mix(in srgb, var(--color-fg) 50%, transparent));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
