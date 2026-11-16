@@ -36,7 +36,7 @@ export default function ResultSheet({ result, onClose }) {
         >
           <div className="sticky top-0 flex items-center gap-3.5 border-b border-line bg-panel2 px-4 py-3.5">
             {result.system ? (
-              <span className="flex items-center gap-2 text-sm font-medium text-err"><CloudOff size={16} />Judge unavailable</span>
+              <span className="flex items-center gap-2 text-sm font-medium text-err"><CloudOff size={16} />{result.title ?? "Judge unavailable"}</span>
             ) : (
               <VerdictBadge key={result.verdict} verdict={result.pending ? "PD" : result.verdict} size="lg" />
             )}

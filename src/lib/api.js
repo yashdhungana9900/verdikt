@@ -13,7 +13,16 @@ async function request(path, options) {
   return body;
 }
 
+const post = (body) => ({ method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}) });
+
 export const api = {
   problems: () => request("/api/problems"),
-  submit: (payload) => request("/api/submissions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
+  submit: (payload) => request("/api/submissions", post(payload)),
+  me: () => request("/api/me"),
+  mySubmissions: () => request("/api/me/submissions"),
+  submissionCode: (id) => request(`/api/me/submissions/${id}`),
+  signup: (body) => request("/api/auth/signup", post(body)),
+  login: (body) => request("/api/auth/login", post(body)),
+  logout: () => request("/api/auth/logout", post()),
+  contest: () => request("/api/contest"),
 };

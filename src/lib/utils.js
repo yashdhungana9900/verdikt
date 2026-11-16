@@ -4,7 +4,8 @@ import { twMerge } from "tailwind-merge";
 export const cn = (...args) => twMerge(clsx(args));
 
 export function timeAgo(t) {
-  const s = Math.max(1, Math.round((Date.now() - t) / 1000));
+  const when = typeof t === "number" ? t : new Date(t).getTime();
+  const s = Math.max(1, Math.round((Date.now() - when) / 1000));
   if (s < 60) return `${s}s ago`;
   const m = Math.round(s / 60);
   if (m < 60) return `${m}m ago`;

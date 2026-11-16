@@ -1,0 +1,17 @@
+# Verdikt's own PostgreSQL. Start with `npm run db:up` (npm run dev does it for you).
+# Port 5440 so it never clashes with other Postgres containers on 5432 or 5433.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: verdikt-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: verdikt
+      POSTGRES_PASSWORD: verdikt   # local development only. Use a real secret in production.
+      POSTGRES_DB: verdikt
+    ports:
+      - "127.0.0.1:5440:5432"
+    volumes:
+      - verdikt-pgdata:/var/lib/postgresql/data
+volumes:
+  verdikt-pgdata:

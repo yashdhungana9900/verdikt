@@ -13,7 +13,9 @@ import { DifficultyChip } from "@/pages/Problems";
 import NotFound from "@/pages/NotFound";
 import { useProblems } from "@/lib/problems";
 import { submitSolution } from "@/lib/judge";
-import { addSubmission, markSolved, useSubmissions } from "@/lib/store";
+import { useSubmissions } from "@/lib/store";
+import { openAuth, refreshMe, useAuth } from "@/lib/auth";
+import { api } from "@/lib/api";
 import { useTheme } from "@/lib/theme";
 import { cn, timeAgo } from "@/lib/utils";
 
@@ -46,7 +48,7 @@ const Inline = ({ text }) => text.split("`").map((part, i) =>
 const Label = ({ children }) => <h3 className="mb-2 mt-6 text-xs font-medium uppercase tracking-wider text-fg3">{children}</h3>;
 const Pre = ({ children }) => <pre className="whitespace-pre-wrap rounded-lg border border-line bg-panel p-3 font-mono text-[13px] leading-relaxed">{children}</pre>;
 
-function Statement({ problem, subs }) {
+function Statement({ problem, subs, user, onLoad }) {
   const [tab, setTab] = useState("desc");
   const tabs = [["desc", "Description"], ["subs", subs.length ? `Submissions (${subs.length})` : "Submissions"]];
   return (
@@ -87,13 +89,14 @@ function Statement({ problem, subs }) {
               <span className="font-mono text-xs text-fg2">{s.passed}/{s.total} · {s.runtimeMs} ms{s.memoryMb ? ` · ${s.memoryMb} MB` : ""}</span>
               <span className="text-xs text-fg3">{LABEL[s.language] ?? ""}</span>
               <span className="ml-auto text-xs text-fg3">{timeAgo(s.at)}</span>
+              <button onClick={() => onLoad(s)} className="rounded-md border border-line px-2 py-0.5 text-xs text-fg2 transition hover:border-line2 hover:text-fg">Load code</button>
             </motion.div>
           ))}
         </div>
       ) : (
         <div className="rounded-xl border border-dashed border-line px-5 py-12 text-center text-fg2">
           <b className="mb-1 block font-semibold text-fg">No submissions yet</b>
-          Your first verdict will show up here.
+          {user ? "Your first verdict will show up here." : <>Log in to save your submissions. <button onClick={() => openAuth("login")} className="text-accent2 hover:underline">Log in</button></>}
         </div>
       )}
     </section>
@@ -102,6 +105,7 @@ function Statement({ problem, subs }) {
 
 function Workspace({ problem }) {
   const theme = useTheme();
+  const { user } = useAuth();
   const subs = useSubmissions().filter((s) => s.problemId === problem.id);
   const [lang, setLang] = useState(() => localStorage.getItem("verdikt:lang") || "js");
   const [code, setCode] = useState(() => localStorage.getItem(draftKey(problem.id, lang)) ?? problem.starters[lang]);
@@ -120,26 +124,32 @@ function Workspace({ problem }) {
 
   const go = async (mode) => {
     if (busy) return;
+    if (mode === "submit" && !user) { openAuth("login", "Log in to submit solutions and track your progress."); return; }
     setBusy(mode);
     setResult({ pending: true, verdict: "PD", cases: [] });
     try {
       const res = await submitSolution({ problemId: problem.id, language: lang, code, mode });
       setResult(res);
       if (mode === "submit") {
-        addSubmission({ id: Date.now(), problemId: problem.id, language: lang, verdict: res.verdict, passed: res.cases.filter((c) => c.status === "AC").length, total: res.total, runtimeMs: res.runtimeMs, memoryMb: res.memoryMb, at: Date.now() });
-        if (res.verdict === "AC") {
-          markSolved(problem.id);
-          confetti({ particleCount: 120, spread: 75, origin: { y: 0.7 }, colors: ["#3DD68C", "#7C5CFF", "#F5B544", "#9B7BFF"] });
-        }
+        refreshMe(); // the server saved it; reload solved problems and history
+        if (res.verdict === "AC") confetti({ particleCount: 120, spread: 75, origin: { y: 0.7 }, colors: ["#3DD68C", "#7C5CFF", "#F5B544", "#9B7BFF"] });
       }
     } catch (e) {
-      setResult({ system: true, message: e.message });
+      if (e.code === "login_required") { setResult(null); openAuth("login", e.message); }
+      else setResult({ system: true, message: e.message });
     } finally {
       setBusy(null);
     }
   };
   submitRef.current = () => go("submit"); // latest closure for the Monaco shortcut
 
+  const loadSubmission = async (s) => {
+    try {
+      const { language, code: src } = await api.submissionCode(s.id);
+      try { localStorage.setItem("verdikt:lang", language); localStorage.setItem(draftKey(problem.id, language), src); } catch { /* ignore */ }
+      setLang(language); setCode(src); setResult(null);
+    } catch (e) { setResult({ system: true, title: "Couldn't load that submission", message: e.message }); }
+  };
   const onChange = (v) => { setCode(v ?? ""); save(v ?? ""); };
   const setAll = (v) => { setCode(v); save(v); setResult(null); };
   const solution = problem.solutions?.[lang];
@@ -177,7 +187,7 @@ function Workspace({ problem }) {
     </section>
   );
 
-  return <SplitPane left={<Statement problem={problem} subs={subs} />} right={editor} />;
+  return <SplitPane left={<Statement problem={problem} subs={subs} user={user} onLoad={loadSubmission} />} right={editor} />;
 }
 
 export default function ProblemPage() {

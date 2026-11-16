@@ -7,12 +7,20 @@ An online judge that feels like a premium developer tool, in the same league as 
 ```bash
 npm install
 npm run judge:pull   # once: downloads the sandbox images and builds a fast C++ one (several minutes, about 1.3 GB)
-npm run dev          # website on :5173 and judge server on :3001
+npm run dev          # starts the database, the server (:3001) and the website (:5173)
 ```
 
-Open http://localhost:5173. Docker Desktop must be running.
+Open http://localhost:5173. Docker Desktop must be running. The first run downloads the PostgreSQL image (about 100 MB).
 
 No Docker? `npm run dev:local` runs code directly on your machine. It needs Node, Python (`python` on Windows) and g++ installed. It has **no isolation**, so use it for development only.
+
+## Accounts and data
+
+- **PostgreSQL 16** runs in Docker (`docker-compose.yml`, port 5440). Tables are created automatically on first use: `users`, `sessions`, `submissions`.
+- **Passwords** are hashed with scrypt. **Sessions** are random tokens stored hashed in the database and sent in an HttpOnly cookie.
+- **Run** is free for everyone. **Submit** needs an account, and every submission (with your code) is saved.
+- **Contest:** a new weekly contest starts every Monday 00:00 UTC. Standings are computed in SQL: most problems solved first, then lowest penalty (minutes to each first Accepted, plus 20 for every wrong attempt before it).
+- Connect elsewhere with `DATABASE_URL`. Set `NODE_ENV=production` for Secure cookies and `DEV_SOLUTIONS=0` to hide reference solutions.
 
 ## How judging works
 
@@ -39,7 +47,9 @@ Make Verdikt feel like a premium developer tool. A user should open it, solve a 
 
 ```
 server/
-  index.js       HTTP API, rate limit, validation
+  index.js       HTTP API, routes, rate limits, contest standings
+  db.js          PostgreSQL connection and schema
+  auth.js        password hashing and sessions
   judge.js       sandbox runner, verdicts, queue
   problems.js    problems and tests (add yours here)
 src/
@@ -55,9 +65,9 @@ Add an object to `server/problems.js` with `tests: [{ input, output }]`. The fir
 
 ## Next steps
 
-1. Accounts and a database (PostgreSQL) so submissions and solved problems are saved per user, not in the browser.
+1. Email verification and password reset.
 2. A real queue (Redis + a separate worker) so the judge scales beyond one machine.
-3. Real contests: a WebSocket feed for the leaderboard instead of the simulation.
+3. A WebSocket feed so the leaderboard updates instantly instead of every 5 seconds.
 4. More problems, more languages, custom checkers for problems with several valid answers.
 5. Deploy: website on Vercel, judge on a VM with Docker.
 
