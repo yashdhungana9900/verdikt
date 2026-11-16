@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: verdikt
-      POSTGRES_PASSWORD: verdikt   # local development only. Use a real secret in production.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-verdikt}   # the default is for local development only
       POSTGRES_DB: verdikt
     ports:
       - "127.0.0.1:5440:5432"

@@ -6,6 +6,8 @@ import { query, dbReady, DbUnavailable } from "./db.js";
 import { hashPassword, verifyPassword, DUMMY_HASH, startSession, endSession, currentUser, purgeExpiredSessions } from "./auth.js";
 
 const PORT = Number(process.env.PORT) || 3001;
+const HOST = process.env.HOST || "127.0.0.1"; // only reachable through the reverse proxy in production
+const TRUST_PROXY = process.env.TRUST_PROXY === "1"; // set when Caddy/nginx is in front, so rate limits see real visitor IPs
 config.mode = process.argv.includes("--local") ? "local" : "docker";
 const WITH_SOLUTIONS = process.env.DEV_SOLUTIONS !== "0"; // set DEV_SOLUTIONS=0 in production
 
@@ -20,6 +22,9 @@ function readBody(req, limit = 200_000) {
     req.on("error", reject);
   });
 }
+
+// Behind a proxy every request comes from 127.0.0.1, so use the address the proxy reports.
+const clientIp = (req) => (TRUST_PROXY ? req.headers["x-forwarded-for"]?.split(",").pop().trim() : null) || req.socket.remoteAddress;
 
 // Simple per-IP limiters.
 const buckets = new Map();
@@ -61,7 +66,7 @@ LIMIT 100`;
 
 const server = http.createServer(async (req, res) => {
   const { pathname } = new URL(req.url, "http://x");
-  const ip = req.socket.remoteAddress;
+  const ip = clientIp(req);
   try {
     if (req.method === "GET" && pathname === "/api/health") return send(res, 200, { ok: true, mode: config.mode, db: await dbReady(), queue: queueStats() });
     if (req.method === "GET" && pathname === "/api/problems") return send(res, 200, publicProblems({ withSolutions: WITH_SOLUTIONS }));
@@ -163,8 +168,8 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, async () => {
-  console.log(`Verdikt server on http://localhost:${PORT}  (judge: ${config.mode})`);
+server.listen(PORT, HOST, async () => {
+  console.log(`Verdikt server on http://${HOST}:${PORT}  (judge: ${config.mode})`);
   if (await dbReady()) { console.log("  Database is ready."); purgeExpiredSessions(); setInterval(purgeExpiredSessions, 3_600_000).unref(); }
   else console.log("  Database isn't running yet. Start it with `npm run db:up` (Docker Desktop must be running).");
   if (config.mode === "local") return console.log("  Local judge mode runs code on this machine WITHOUT isolation. Development only.");

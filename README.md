@@ -35,6 +35,10 @@ Browser  --POST /api/submissions-->  Judge server  -->  Docker sandbox
 - **Verdicts:** Accepted, Wrong Answer, Time Limit Exceeded, Runtime Error, Compilation Error. Time limit is 1 s, times 1 for C++, 2 for JavaScript, 3 for Python.
 - **Programs read stdin and print to stdout**, like Codeforces. Output is compared ignoring trailing whitespace.
 
+## Deploy
+
+See [DEPLOY.md](DEPLOY.md) for putting Verdikt on a server with HTTPS.
+
 ## Design goal (the brief)
 
 Make Verdikt feel like a premium developer tool. A user should open it, solve a problem, and think "this looks like a real product", not "this is a college project."
